@@ -7,6 +7,16 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add,
                                                            target: self,
                                                            action: #selector(addNewPerson))
+        let defaults = UserDefaults.standard
+        if let savedPeople = defaults.object(forKey: "people") as? Data {
+            let jsonDecoder = JSONDecoder()
+            do {
+                people = try jsonDecoder.decode([Person].self,
+                                                from: savedPeople)
+            } catch {
+                print("Failed to load people")
+            }
+        }
     }
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return people.count
@@ -41,6 +51,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         }
         let person = Person(name: "Unknown", image: imageName)
         people.append(person)
+        save()
         collectionView.reloadData()
         dismiss(animated: true)
         
@@ -66,6 +77,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
                 [weak self,weak ac] _ in
                 guard let newName = ac?.textFields?[0].text else { return }
                 person.name = newName
+                self?.save()
                 self?.collectionView.reloadData()
             })
             ac.addAction(UIAlertAction(title: "Cancel",
@@ -82,6 +94,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
                                        style: .default) {
                 _ in
                 self.people.remove(at: indexPath.item)
+                self.save()
                 self.collectionView.reloadData()
             })
             dc.addAction(UIAlertAction(title: "No",
@@ -90,7 +103,16 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         })
         present(vc, animated: true)
     }
-
+    func save() {
+        let jsonEncoder = JSONEncoder()
+        if let savedData = try? jsonEncoder.encode(people) {
+            let defaults = UserDefaults.standard
+            defaults.set(savedData,
+                         forKey: "people")
+        } else {
+            print("Failed to save people.")
+        }
+    }
 
 }
 
